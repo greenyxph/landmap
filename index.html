@@ -8,29 +8,45 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
   <style>
     body { margin: 0; }
-    #map { height: 100vh; width: 100%; }
+    #map { height: 100vh; width: 100%; touch-action: none; }
     #areaOutput {
       position: absolute;
       top: 10px; left: 10px;
       background: white; padding: 8px;
       font-size: 1.1em; z-index: 1000;
       border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-family: sans-serif;
     }
   </style>
 </head>
 <body>
-  <div id="areaOutput">Draw a shape to measure area</div>
+  <div id="areaOutput">📐 Draw a shape to measure area</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet-geometryutil"></script>
   <script>
-    const map = L.map('map').setView([14.9, 120.8], 18); // Plaridel center
+    const map = L.map('map');
 
+    // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 22,
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // Try to center on user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        map.setView([userLat, userLng], 18);
+      }, function() {
+        map.setView([14.9, 120.8], 18); // fallback to Plaridel
+      });
+    } else {
+      map.setView([14.9, 120.8], 18); // fallback if geolocation unsupported
+    }
 
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
@@ -57,7 +73,7 @@
 
       const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
       const hectares = (area / 10000).toFixed(2);
-      document.getElementById("areaOutput").innerText = `Area: ${hectares} hectares`;
+      document.getElementById("areaOutput").innerText = `📏 Area: ${hectares} hectares`;
     });
   </script>
 </body>
