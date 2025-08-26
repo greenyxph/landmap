@@ -1,57 +1,83 @@
 <!DOCTYPE html>
-<html lang="tl">
+<html>
 <head>
+  <title>Land Measurement</title>
   <meta charset="utf-8" />
-  <title>LandMap</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; }
-    #map { height: 100%; width: 100%; }
-    .leaflet-control-attribution { display: none !important; }
-    .footer {
+    body { margin: 0; }
+    #map { height: 100vh; width: 100%; touch-action: none; }
+    #areaOutput {
       position: absolute;
-      bottom: 5px;
-      width: 100%;
-      text-align: center;
-      font-size: 12px;
-      color: #666;
-      background: rgba(255,255,255,0.7);
-      padding: 4px;
+      top: 10px; left: 10px;
+      background: white; padding: 8px;
+      font-size: 1.1em; z-index: 1000;
+      border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
+    }
+    .leaflet-control-attribution {
+      display: none !important;
     }
   </style>
 </head>
 <body>
+  <div id="areaOutput">📐 Draw a shape to measure area</div>
   <div id="map"></div>
-  <div class="footer">🌾LandMap</div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet-geometryutil"></script>
   <script>
-    const map = L.map('map').setView([14.9547, 120.8566], 15); // Plaridel, Bulacan
+    const map = L.map('map');
 
+    // Load OpenStreetMap tiles without attribution
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '', // Attribution removed
-      maxZoom: 19
+      maxZoom: 22,
+      attribution: '' // ← Attribution removed
     }).addTo(map);
 
-    let points = [];
-    let polygon;
+    // Try to center on user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        map.setView([userLat, userLng], 18);
+      }, function() {
+        map.setView([14.9, 120.8], 18); // fallback to Plaridel
+      });
+    } else {
+      map.setView([14.9, 120.8], 18); // fallback if geolocation unsupported
+    }
 
-    map.on('click', function(e) {
-      points.push(e.latlng);
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
 
-      if (polygon) {
-        map.removeLayer(polygon);
+    const drawControl = new L.Control.Draw({
+      draw: {
+        polygon: true,
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        marker: false,
+        circlemarker: false
+      },
+      edit: {
+        featureGroup: drawnItems
       }
+    });
+    map.addControl(drawControl);
 
-      polygon = L.polygon(points, { color: 'green' }).addTo(map);
+    map.on(L.Draw.Event.CREATED, function (e) {
+      drawnItems.clearLayers();
+      const layer = e.layer;
+      drawnItems.addLayer(layer);
 
-      const area = L.GeometryUtil.geodesicArea(polygon.getLatLngs()[0]) / 10000;
-      polygon.bindPopup(`Sukat: ${area.toFixed(2)} ektarya`).openPopup();
+      const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+      const hectares = (area / 10000).toFixed(2);
+      document.getElementById("areaOutput").innerText = `📏 Area: ${hectares} hectares`;
     });
   </script>
-
-  <script src="https://unpkg.com/leaflet-geometryutil"></script>
 </body>
 </html>
