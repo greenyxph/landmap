@@ -12,10 +12,10 @@
 
     #areaOutput {
       position: absolute;
-      top: 50px; left: 50%;
+      top: 10px; left: 50%;
       transform: translateX(-50%);
       background: white; padding: 6px 10px;
-      font-size: 0.95em; z-index: 1000;
+      font-size: 0.9em; z-index: 1000;
       border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
       text-align: center;
@@ -27,7 +27,7 @@
       bottom: 10px; right: 10px;
       background: #006400; color: white;
       border: none; padding: 6px 10px;
-      font-size: 0.95em; z-index: 1000;
+      font-size: 0.9em; z-index: 1000;
       border-radius: 4px; cursor: pointer;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
@@ -38,7 +38,7 @@
       bottom: 10px; left: 10px;
       background: #333; color: white;
       border: none; padding: 6px 10px;
-      font-size: 0.95em; z-index: 1000;
+      font-size: 0.9em; z-index: 1000;
       border-radius: 4px; cursor: pointer;
       box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
@@ -46,6 +46,29 @@
 
     .leaflet-control-attribution {
       display: none !important;
+    }
+
+    /* Pulsing dot */
+    .pulse-marker {
+      background: #00ff00;
+      border-radius: 50%;
+      width: 12px;
+      height: 12px;
+      position: relative;
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 0 rgba(0,255,0,0.4);
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(0,255,0,0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(0,255,0,0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(0,255,0,0);
+      }
     }
   </style>
 </head>
@@ -61,7 +84,6 @@
   <script>
     const map = L.map('map');
 
-    // Define both tile layers
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 22,
       attribution: ''
@@ -72,11 +94,9 @@
       attribution: 'Tiles © Esri'
     });
 
-    // Start with satellite view
     satelliteLayer.addTo(map);
     let currentLayer = 'satellite';
 
-    // Toggle button logic
     document.getElementById("toggleViewBtn").addEventListener("click", function () {
       if (currentLayer === 'satellite') {
         map.removeLayer(satelliteLayer);
@@ -91,22 +111,34 @@
       }
     });
 
-    // Center on user's location
+    let locationMarker;
+
     function centerToUserLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
           const userLat = position.coords.latitude;
           const userLng = position.coords.longitude;
           map.setView([userLat, userLng], 18);
+
+          if (locationMarker) {
+            map.removeLayer(locationMarker);
+          }
+
+          const pulsingIcon = L.divIcon({
+            className: 'pulse-marker',
+            iconSize: [12, 12]
+          });
+
+          locationMarker = L.marker([userLat, userLng], { icon: pulsingIcon }).addTo(map);
         }, function() {
-          map.setView([14.9, 120.8], 18); // fallback to Plaridel
+          map.setView([14.9, 120.8], 18);
         });
       } else {
-        map.setView([14.9, 120.8], 18); // fallback if geolocation unsupported
+        map.setView([14.9, 120.8], 18);
       }
     }
 
-    centerToUserLocation(); // initial load
+    centerToUserLocation();
     document.getElementById("recenterBtn").addEventListener("click", centerToUserLocation);
 
     const drawnItems = new L.FeatureGroup();
