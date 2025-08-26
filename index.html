@@ -17,6 +17,16 @@
       border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
     }
+    #recenterBtn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: #006400; color: white;
+      border: none; padding: 8px 12px;
+      font-size: 1em; z-index: 1000;
+      border-radius: 4px; cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-family: sans-serif;
+    }
     .leaflet-control-attribution {
       display: none !important;
     }
@@ -24,6 +34,7 @@
 </head>
 <body>
   <div id="areaOutput">📐 Draw a shape to measure area</div>
+  <button id="recenterBtn">📍 Center to My Location</button>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -35,21 +46,27 @@
     // Load OpenStreetMap tiles without attribution
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 22,
-      attribution: '' // ← Attribution removed
+      attribution: ''
     }).addTo(map);
 
-    // Try to center on user's location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-        map.setView([userLat, userLng], 18);
-      }, function() {
-        map.setView([14.9, 120.8], 18); // fallback to Plaridel
-      });
-    } else {
-      map.setView([14.9, 120.8], 18); // fallback if geolocation unsupported
+    // Initial center on user's location
+    function centerToUserLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
+          map.setView([userLat, userLng], 18);
+        }, function() {
+          map.setView([14.9, 120.8], 18); // fallback to Plaridel
+        });
+      } else {
+        map.setView([14.9, 120.8], 18); // fallback if geolocation unsupported
+      }
     }
+
+    centerToUserLocation(); // initial load
+
+    document.getElementById("recenterBtn").addEventListener("click", centerToUserLocation);
 
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
