@@ -33,6 +33,17 @@
       font-family: sans-serif;
     }
 
+    #toggleViewBtn {
+      position: absolute;
+      bottom: 10px; left: 10px;
+      background: #333; color: white;
+      border: none; padding: 6px 10px;
+      font-size: 0.95em; z-index: 1000;
+      border-radius: 4px; cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-family: sans-serif;
+    }
+
     .leaflet-control-attribution {
       display: none !important;
     }
@@ -41,6 +52,7 @@
 <body>
   <div id="areaOutput">📐 Draw a shape to measure area</div>
   <button id="recenterBtn">📍 Center to My Location</button>
+  <button id="toggleViewBtn">🛰️ Satellite View</button>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -49,13 +61,37 @@
   <script>
     const map = L.map('map');
 
-    // Load OpenStreetMap tiles without attribution
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Define both tile layers
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 22,
       attribution: ''
-    }).addTo(map);
+    });
 
-    // Initial center on user's location
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 22,
+      attribution: 'Tiles © Esri'
+    });
+
+    // Start with satellite view
+    satelliteLayer.addTo(map);
+    let currentLayer = 'satellite';
+
+    // Toggle button logic
+    document.getElementById("toggleViewBtn").addEventListener("click", function () {
+      if (currentLayer === 'satellite') {
+        map.removeLayer(satelliteLayer);
+        osmLayer.addTo(map);
+        currentLayer = 'osm';
+        this.innerText = '🗺️ Standard View';
+      } else {
+        map.removeLayer(osmLayer);
+        satelliteLayer.addTo(map);
+        currentLayer = 'satellite';
+        this.innerText = '🛰️ Satellite View';
+      }
+    });
+
+    // Center on user's location
     function centerToUserLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
@@ -71,7 +107,6 @@
     }
 
     centerToUserLocation(); // initial load
-
     document.getElementById("recenterBtn").addEventListener("click", centerToUserLocation);
 
     const drawnItems = new L.FeatureGroup();
