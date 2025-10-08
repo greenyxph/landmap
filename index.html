@@ -14,13 +14,17 @@
       position: absolute;
       top: 10px; left: 50%;
       transform: translateX(-50%);
-      background: white; padding: 6px 10px;
-      font-size: 0.9em; z-index: 1000;
-      border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      background: transparent;
+      padding: 6px 10px;
+      font-size: 0.9em;
+      z-index: 1000;
+      border-radius: 4px;
       font-family: sans-serif;
       text-align: center;
       white-space: normal;
       max-width: 90%;
+      color: white;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
     }
 
     #recenterBtn {
@@ -63,6 +67,16 @@
       0% { box-shadow: 0 0 0 0 rgba(0,255,0,0.4); }
       70% { box-shadow: 0 0 0 10px rgba(0,255,0,0); }
       100% { box-shadow: 0 0 0 0 rgba(0,255,0,0); }
+    }
+
+    .point-label {
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.75em;
+      font-family: sans-serif;
+      text-shadow: 1px 1px 2px black;
     }
   </style>
 </head>
@@ -163,6 +177,27 @@
     });
     map.addControl(drawControl);
 
+    function getWeatherDescription(code) {
+      const descriptions = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Fog",
+        48: "Depositing rime fog",
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        80: "Rain showers",
+        95: "Thunderstorm",
+        99: "Thunderstorm with hail"
+      };
+      return descriptions[code] || "Unknown weather";
+    }
+
     map.on(L.Draw.Event.CREATED, function (e) {
       drawnItems.clearLayers();
       const layer = e.layer;
@@ -172,15 +207,22 @@
       const area = L.GeometryUtil.geodesicArea(latlngs);
       const hectares = (area / 10000).toFixed(2);
 
-      let coordsText = latlngs.map((point, index) => {
-        return `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
-      }).join('<br>');
+      let coordsText = '';
+      latlngs.forEach((point, index) => {
+        coordsText += `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}<br>`;
+        const label = L.divIcon({
+          className: 'point-label',
+          html: `Point ${index + 1}`,
+          iconSize: [60, 20]
+        });
+        L.marker([point.lat, point.lng], { icon: label }).addTo(map);
+      });
 
       const firstPoint = latlngs[0];
       const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${firstPoint.lat}&lon=${firstPoint.lng}`;
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${firstPoint.lat}&longitude=${firstPoint.lng}&current_weather=true`;
 
-      Promise.all([
+            Promise.all([
         fetch(geocodeUrl).then(res => res.json()),
         fetch(weatherUrl).then(res => res.json())
       ])
@@ -189,17 +231,18 @@
         const weather = weatherData.current_weather;
 
         const climateText = weather
-          ? `🌡️ Temperature: ${weather.temperature}°C<br>💨 Wind: ${weather.windspeed} km/h<br>🧭 Direction: ${weather.winddirection}°<br>🕒 Time: ${weather.time}`
+          ? `🌡️ Temperature: ${weather.temperature}°C<br>💨 Wind: ${weather.windspeed} km/h<br>🌤️ Weather: ${getWeatherDescription(weather.weathercode)}<br>🕒 Time: ${weather.time}`
           : "🌦️ Climate data unavailable";
 
         document.getElementById("areaOutput").innerHTML =
-          `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: ${address}<br>${climateText}`;
+          `📏 Area: ${hectares} hectares<br>${coordsText}📌 Address: ${address}<br>${climateText}`;
       })
       .catch(() => {
         document.getElementById("areaOutput").innerHTML =
-          `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: Unable to retrieve<br>🌦️ Climate data unavailable`;
+          `📏 Area: ${hectares} hectares<br>${coordsText}📌 Address: Unable to retrieve<br>🌦️ Climate data unavailable`;
       });
     });
   </script>
 </body>
 </html>
+       
