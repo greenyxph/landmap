@@ -176,7 +176,20 @@
         return `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
       }).join('<br>');
 
-      document.getElementById("areaOutput").innerHTML = `📏 Area: ${hectares} hectares<br>${coordsText}`;
+      const firstPoint = latlngs[0];
+      const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${firstPoint.lat}&lon=${firstPoint.lng}`;
+
+      fetch(geocodeUrl)
+        .then(response => response.json())
+        .then(data => {
+          const address = data.display_name || "Address not found";
+          document.getElementById("areaOutput").innerHTML =
+            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: ${address}`;
+        })
+        .catch(() => {
+          document.getElementById("areaOutput").innerHTML =
+            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: Unable to retrieve`;
+        });
     });
   </script>
 </body>
