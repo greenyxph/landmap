@@ -48,7 +48,6 @@
       display: none !important;
     }
 
-    /* Pulsing dot */
     .pulse-marker {
       background: #00ff00;
       border-radius: 50%;
@@ -60,15 +59,9 @@
     }
 
     @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(0,255,0,0.4);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(0,255,0,0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(0,255,0,0);
-      }
+      0% { box-shadow: 0 0 0 0 rgba(0,255,0,0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(0,255,0,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,255,0,0); }
     }
   </style>
 </head>
@@ -89,13 +82,24 @@
       attribution: ''
     });
 
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 22,
-      attribution: 'Tiles © Esri'
+    const satelliteLayer = L.tileLayer('http://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google'
     });
 
     satelliteLayer.addTo(map);
     let currentLayer = 'satellite';
+
+    // 🔁 Auto-refresh logic
+    const refreshInterval = 30000; // 30 seconds
+    function refreshMapTiles() {
+      map.eachLayer(function (layer) {
+        if (layer instanceof L.TileLayer) {
+          layer.setUrl(layer._url + '?t=' + new Date().getTime());
+        }
+      });
+    }
+    setInterval(refreshMapTiles, refreshInterval);
 
     document.getElementById("toggleViewBtn").addEventListener("click", function () {
       if (currentLayer === 'satellite') {
@@ -164,9 +168,15 @@
       const layer = e.layer;
       drawnItems.addLayer(layer);
 
-      const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+      const latlngs = layer.getLatLngs()[0];
+      const area = L.GeometryUtil.geodesicArea(latlngs);
       const hectares = (area / 10000).toFixed(2);
-      document.getElementById("areaOutput").innerText = `📏 Area: ${hectares} hectares`;
+
+      let coordsText = latlngs.map((point, index) => {
+        return `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
+      }).join('<br>');
+
+      document.getElementById("areaOutput").innerHTML = `📏 Area: ${hectares} hectares<br>${coordsText}`;
     });
   </script>
 </body>
