@@ -178,17 +178,18 @@
 
       const firstPoint = latlngs[0];
       const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${firstPoint.lat}&lon=${firstPoint.lng}`;
-      const climateUrl = `https://api.open-meteo.com/v1/forecast?latitude=${firstPoint.lat}&longitude=${firstPoint.lng}&current_weather=true`;
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${firstPoint.lat}&longitude=${firstPoint.lng}&current_weather=true`;
 
       Promise.all([
         fetch(geocodeUrl).then(res => res.json()),
-        fetch(climateUrl).then(res => res.json())
+        fetch(weatherUrl).then(res => res.json())
       ])
-      .then(([geoData, climateData]) => {
+      .then(([geoData, weatherData]) => {
         const address = geoData.display_name || "Address not found";
-        const weather = climateData.current_weather;
+        const weather = weatherData.current_weather;
+
         const climateText = weather
-          ? `🌡️ Temp: ${weather.temperature}°C<br>💨 Wind: ${weather.windspeed} km/h<br>☁️ Cloud Cover: ${weather.cloudcover}%`
+          ? `🌡️ Temperature: ${weather.temperature}°C<br>💨 Wind: ${weather.windspeed} km/h<br>🧭 Direction: ${weather.winddirection}°<br>🕒 Time: ${weather.time}`
           : "🌦️ Climate data unavailable";
 
         document.getElementById("areaOutput").innerHTML =
