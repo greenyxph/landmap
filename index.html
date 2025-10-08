@@ -23,9 +23,9 @@
       max-width: 90%;
     }
 
-    #recenterBtn, #toggleViewBtn {
+    #recenterBtn {
       position: absolute;
-      bottom: 10px;
+      bottom: 10px; right: 10px;
       background: #006400; color: white;
       border: none; padding: 6px 10px;
       font-size: 0.9em; z-index: 1000;
@@ -34,16 +34,15 @@
       font-family: sans-serif;
     }
 
-    #recenterBtn { right: 10px; }
-    #toggleViewBtn { left: 10px; background: #333; }
-
-    #photoUpload {
+    #toggleViewBtn {
       position: absolute;
-      top: 50px; left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
+      bottom: 10px; left: 10px;
+      background: #333; color: white;
+      border: none; padding: 6px 10px;
+      font-size: 0.9em; z-index: 1000;
+      border-radius: 4px; cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
-      font-size: 0.9em;
     }
 
     .leaflet-control-attribution {
@@ -68,8 +67,7 @@
   </style>
 </head>
 <body>
-  <div id="areaOutput">Draw a shape to measure area</div>
-  <input type="file" accept="image/*" id="photoUpload" />
+  <div id="areaOutput"> Draw a shape to measure area</div>
   <button id="recenterBtn">📍 My Location</button>
   <button id="toggleViewBtn">🛰️ Satellite View</button>
   <div id="map"></div>
@@ -93,7 +91,6 @@
     satelliteLayer.addTo(map);
     let currentLayer = 'satellite';
 
-    // 🔁 Auto-refresh logic
     const refreshInterval = 30000;
     function refreshMapTiles() {
       map.eachLayer(function (layer) {
@@ -174,7 +171,6 @@
       const latlngs = layer.getLatLngs()[0];
       const area = L.GeometryUtil.geodesicArea(latlngs);
       const hectares = (area / 10000).toFixed(2);
-      const timestamp = new Date().toLocaleString();
 
       let coordsText = latlngs.map((point, index) => {
         return `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
@@ -182,31 +178,26 @@
 
       const firstPoint = latlngs[0];
       const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${firstPoint.lat}&lon=${firstPoint.lng}`;
+      const climateUrl = `https://api.open-meteo.com/v1/forecast?latitude=${firstPoint.lat}&longitude=${firstPoint.lng}&current_weather=true`;
 
-      fetch(geocodeUrl)
-        .then(response => response.json())
-        .then(data => {
-          const address = data.display_name || "Address not found";
-          document.getElementById("areaOutput").innerHTML =
-            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: ${address}<br>📅 Timestamp: ${timestamp}`;
-        })
-        .catch(() => {
-          document.getElementById("areaOutput").innerHTML =
-            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: Unable to retrieve<br>📅 Timestamp: ${timestamp}`;
-        });
-    });
+      Promise.all([
+        fetch(geocodeUrl).then(res => res.json()),
+        fetch(climateUrl).then(res => res.json())
+      ])
+      .then(([geoData, climateData]) => {
+        const address = geoData.display_name || "Address not found";
+        const weather = climateData.current_weather;
+        const climateText = weather
+          ? `🌡️ Temp: ${weather.temperature}°C<br>💨 Wind: ${weather.windspeed} km/h<br>☁️ Cloud Cover: ${weather.cloudcover}%`
+          : "🌦️ Climate data unavailable";
 
-    // 📸 Photo upload with geotagging
-    document.getElementById("photoUpload").addEventListener("change", function () {
-      const file = this.files[0];
-      if (file && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          const lat = position.coords.latitude.toFixed(6);
-          const lng = position.coords.longitude.toFixed(6);
-          const time = new Date().toLocaleString();
-          alert(`📸 Photo uploaded with geotag:\nLatitude: ${lat}\nLongitude: ${lng}\nTimestamp: ${time}`);
-        });
-      }
+        document.getElementById("areaOutput").innerHTML =
+          `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: ${address}<br>${climateText}`;
+      })
+      .catch(() => {
+        document.getElementById("areaOutput").innerHTML =
+          `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: Unable to retrieve<br>🌦️ Climate data unavailable`;
+      });
     });
   </script>
 </body>
