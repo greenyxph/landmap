@@ -19,12 +19,13 @@
       border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.3);
       font-family: sans-serif;
       text-align: center;
-      white-space: nowrap;
+      white-space: normal;
+      max-width: 90%;
     }
 
-    #recenterBtn {
+    #recenterBtn, #toggleViewBtn {
       position: absolute;
-      bottom: 10px; right: 10px;
+      bottom: 10px;
       background: #006400; color: white;
       border: none; padding: 6px 10px;
       font-size: 0.9em; z-index: 1000;
@@ -33,15 +34,16 @@
       font-family: sans-serif;
     }
 
-    #toggleViewBtn {
+    #recenterBtn { right: 10px; }
+    #toggleViewBtn { left: 10px; background: #333; }
+
+    #photoUpload {
       position: absolute;
-      bottom: 10px; left: 10px;
-      background: #333; color: white;
-      border: none; padding: 6px 10px;
-      font-size: 0.9em; z-index: 1000;
-      border-radius: 4px; cursor: pointer;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      top: 50px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
       font-family: sans-serif;
+      font-size: 0.9em;
     }
 
     .leaflet-control-attribution {
@@ -66,7 +68,8 @@
   </style>
 </head>
 <body>
-  <div id="areaOutput"> Draw a shape to measure area</div>
+  <div id="areaOutput">Draw a shape to measure area</div>
+  <input type="file" accept="image/*" id="photoUpload" />
   <button id="recenterBtn">📍 My Location</button>
   <button id="toggleViewBtn">🛰️ Satellite View</button>
   <div id="map"></div>
@@ -91,7 +94,7 @@
     let currentLayer = 'satellite';
 
     // 🔁 Auto-refresh logic
-    const refreshInterval = 30000; // 30 seconds
+    const refreshInterval = 30000;
     function refreshMapTiles() {
       map.eachLayer(function (layer) {
         if (layer instanceof L.TileLayer) {
@@ -171,6 +174,7 @@
       const latlngs = layer.getLatLngs()[0];
       const area = L.GeometryUtil.geodesicArea(latlngs);
       const hectares = (area / 10000).toFixed(2);
+      const timestamp = new Date().toLocaleString();
 
       let coordsText = latlngs.map((point, index) => {
         return `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}`;
@@ -184,12 +188,25 @@
         .then(data => {
           const address = data.display_name || "Address not found";
           document.getElementById("areaOutput").innerHTML =
-            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: ${address}`;
+            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: ${address}<br>📅 Timestamp: ${timestamp}`;
         })
         .catch(() => {
           document.getElementById("areaOutput").innerHTML =
-            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: Unable to retrieve`;
+            `📏 Area: ${hectares} hectares<br>${coordsText}<br>📌 Address: Unable to retrieve<br>📅 Timestamp: ${timestamp}`;
         });
+    });
+
+    // 📸 Photo upload with geotagging
+    document.getElementById("photoUpload").addEventListener("change", function () {
+      const file = this.files[0];
+      if (file && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const lat = position.coords.latitude.toFixed(6);
+          const lng = position.coords.longitude.toFixed(6);
+          const time = new Date().toLocaleString();
+          alert(`📸 Photo uploaded with geotag:\nLatitude: ${lat}\nLongitude: ${lng}\nTimestamp: ${time}`);
+        });
+      }
     });
   </script>
 </body>
