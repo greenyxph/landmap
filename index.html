@@ -225,6 +225,18 @@ const drawControl = new L.Control.Draw({
         L.marker([point.lat, point.lng], { icon: label }).addTo(map);
       });
 
+      map.on('draw:deleted', function () {
+  // Reset info box
+  document.getElementById("areaOutput").innerHTML = "Draw a shape to measure area";
+
+  // Remove all point labels
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Marker && layer.options.icon?.options?.className === 'point-label') {
+      map.removeLayer(layer);
+    }
+  });
+});
+
       const firstPoint = latlngs[0];
       const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${firstPoint.lat}&lon=${firstPoint.lng}`;
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${firstPoint.lat}&longitude=${firstPoint.lng}&current_weather=true`;
