@@ -162,6 +162,13 @@
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
+    L.EditToolbar.Edit.prototype.options.icon = new L.DivIcon({
+  className: 'custom-vertex-icon',
+  html: '📍',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
+    
 const drawControl = new L.Control.Draw({
   draw: {
     polygon: {
