@@ -76,7 +76,6 @@
       border-radius: 3px;
       font-size: 0.75em;
       font-family: sans-serif;
-      text-shadow: 1px 1px 2px black;
     }
   </style>
 </head>
@@ -216,13 +215,14 @@ const drawControl = new L.Control.Draw({
 
       let coordsText = '';
       latlngs.forEach((point, index) => {
-        coordsText += `📍 Point ${index + 1}: ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}<br>`;
+        coordsText += `📍${index + 1} ${point.lat.toFixed(6)}, ${point.lng.toFixed(6)}<br>`;
         const label = L.divIcon({
-          className: 'point-label',
-          html: `Point ${index + 1}`,
-          iconSize: [60, 20]
-        });
-        L.marker([point.lat, point.lng], { icon: label }).addTo(map);
+  className: 'point-label',
+  html: `📍${index + 1}`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
+L.marker([point.lat, point.lng], { icon: label }).addTo(map);
       });
 
       map.on('draw:deleted', function () {
