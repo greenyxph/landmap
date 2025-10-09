@@ -162,19 +162,26 @@
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
 
-    const drawControl = new L.Control.Draw({
-      draw: {
-        polygon: true,
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        marker: false,
-        circlemarker: false
-      },
-      edit: {
-        featureGroup: drawnItems
+const drawControl = new L.Control.Draw({
+  draw: {
+    polygon: {
+      shapeOptions: {
+        color: "#228B22",       // Forest green border
+        fillColor: "#7CFC00",   // Lawn green fill
+        fillOpacity: 0.4,
+        weight: 2
       }
-    });
+    },
+    polyline: false,
+    rectangle: false,
+    circle: false,
+    marker: false,
+    circlemarker: false
+  },
+  edit: {
+    featureGroup: drawnItems
+  }
+});
     map.addControl(drawControl);
 
     function getWeatherDescription(code) {
